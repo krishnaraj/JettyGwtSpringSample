@@ -1,0 +1,125 @@
+/**
+ * From https://github.com/lyhcode/GradleGWTSample
+ * Gradle build config for GWT sdk
+ *
+ * @author lyhcode
+ */
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+apply plugin: 'war'
+apply plugin:'application'
+
+// GWT Settings
+def gwtVersion = '2.5.1'                // GWT SDK version
+def gwtModule = 'com.example.JettyGwtSpringSampleApp'  // GWT module name
+def gwtStartupUrl = 'JettyGwtSpringSampleApp.html'     // Startup URL for Dev Mode
+def gwtWarPath = 'war'                  // WebContent directory
+
+def gwtServerHost = 'localhost'
+def gwtServerPort = 8888
+
+//targetCompatibility = 1.6
+//sourceCompatibility = 1.6
+
+group = 'JettyGwtSpringSampleApp'
+version = '1.0'
+
+sourceSets.main.java.srcDirs = ['src', 'dev-container']
+
+mainClassName = "com.example.web.Application"
+
+// Package War
+war {
+    from gwtWarPath
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile 'org.springframework:spring-webmvc:3.2.4.RELEASE'
+	compile 'cglib:cglib:3.0'
+	compile 'org.eclipse.jetty:jetty-webapp:9.0.6.v20130930'
+	compile 'javax.servlet:javax.servlet-api:3.0.1'
+	compile 'javax.persistence:persistence-api:1.0.2'
+	compile 'org.slf4j:slf4j-log4j12:1.7.5'
+	
+	// more info - http://stackoverflow.com/questions/2231100/spring-mvc-3-validation-unable-to-find-a-default-provider
+	compile 'org.hibernate:hibernate-validator:4.3.1.Final'
+}
+
+
+
+dependencies {
+    // Compile GWT libs, needed for gwtCompile and the javaCompile
+    // Also includes the servlet-api
+    providedCompile "com.google.gwt:gwt-user:${gwtVersion}"
+    providedCompile "com.google.gwt:gwt-dev:${gwtVersion}"
+
+    // Needed for GWT compile and at runtime for RequestBuilder
+    // Specify two artifacts as workaround for GRADLE-1934
+    compile('javax.validation:validation-api:1.0.0.GA') {
+        artifact {
+            name = 'validation-api'
+            type = 'jar'
+        }
+        artifact {
+            name = 'validation-api'
+            type = 'jar'
+            classifier = 'sources'
+        }
+    }
+}
+
+task gwtc (dependsOn: classes, type: JavaExec) {
+
+    description = "GWT compile to JavaScript (production mode)"
+ 
+    main = 'com.google.gwt.dev.Compiler'
+ 
+    classpath {[
+        sourceSets.main.java.srcDirs,
+        configurations.compile
+    ]}
+
+    args = [
+        gwtModule,
+        '-war', gwtWarPath
+    ]
+ 
+    maxHeapSize = '256M'
+}
+
+task devmode (dependsOn: classes, type: JavaExec) {
+
+    description = "Run development mode"
+ 
+    main = 'com.google.gwt.dev.DevMode'
+ 
+    classpath {[
+        sourceSets.main.java.srcDirs,           // Java source
+        sourceSets.main.output.resourcesDir,    // Generated resources
+        sourceSets.main.output.classesDir,      // Generated classes
+        sourceSets.main.compileClasspath,       // Deps
+        configurations.compile
+    ]}
+ 
+    args = (gwtModule instanceof List)?gwtModule:[gwtModule]
+    args += [
+        '-startupUrl', "http://${gwtServerHost}:${gwtServerPort}/${gwtStartupUrl}",
+        '-war', gwtWarPath,
+		'-port', '8888',
+		'-server', 'com.example.devmode.EmbeddedDevMode'
+    ]
+ 
+    maxHeapSize = '256M'
+}
+
+eclipse {
+        classpath {
+                defaultOutputDir = new File(project.getProjectDir().getAbsolutePath() + "/war/WEB-INF/classes");
+        }
+}

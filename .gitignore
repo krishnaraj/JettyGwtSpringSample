@@ -1,0 +1,12 @@
+/bin
+/build
+.project
+.classpath
+.settings
+.gradle
+.gwt
+/war/WEB-INF/classes
+/war/WEB-INF/lib/gwt-servlet.jar
+gwt-unitCache/
+war/jettygwtspringsampleapp
+war/WEB-INF/deploy
